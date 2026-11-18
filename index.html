@@ -207,6 +207,9 @@ function putPhoto(id,data){if(useIDB)idbPut("photos",id,data).catch(()=>toast("�
 function dropPhoto(id){if(useIDB)idbDel("photos",id).catch(()=>{})}
 document.addEventListener("visibilitychange",()=>{if(document.hidden)flush()});
 const pal=id=>db.palaces.find(p=>p.id===id);
+const realLists=()=>db.lists.filter(l=>!l.example);
+function exampleList(){const P=db.palaces.find(p=>p.name==="우리 집 (예시)"&&p.loci.length>=10)||db.palaces.find(p=>p.loci.length>=10);if(!P)return null;
+  return{id:"example-joseon",example:true,title:"조선 전기 왕 순서 (예시)",palaceId:P.id,items:["태조","정종","태종","세종","문종","단종","세조","예종","성종","연산군"].map(t=>({text:t,scene:""})),built:false,stage:-1,due:today(),reviews:[],created:0}}
 const active=L=>L.items.map((it,k)=>it.text.trim()?k:-1).filter(k=>k>=0);
 const lst=id=>db.lists.find(l=>l.id===id);
 
@@ -231,7 +234,7 @@ function tabOf(){if(V.temp)return"drill";return{today:"today",lists:"lists",newL
 function render(){
   if(!db)return;
   const t=tabOf();document.querySelectorAll(".tabs button").forEach(b=>{b.classList.toggle("on",b.dataset.tab===t);b.setAttribute("aria-current",b.dataset.tab===t?"page":"false")});
-  const due=db.lists.filter(l=>l.built&&l.due<=today()).length;
+  const due=realLists().filter(l=>l.built&&l.due<=today()).length;
   $("#hdrSub").textContent=md(Date.now())+(due?` · 복습 ${due}개`:"");
   try{if(navigator.setAppBadge)(due?navigator.setAppBadge(due):navigator.clearAppBadge()).catch(()=>{})}catch(e){}
   VIEWS[V.name]();
@@ -252,7 +255,7 @@ function listCard(l){
   const last=l.reviews.at(-1);
   return `<div class="card ${l.built&&l.due<=t?"due":""}" data-id="${l.id}">
     <div class="row between"><h2>${esc(l.title)}</h2>${status}</div>
-    <div class="small muted">${esc(P?P.name:"(궁전 없음)")} · ${active(l).length}개${last?` · 지난 회상 ${Math.round(last.score*100)}%`:""}${l.reviews.length?` · ${l.reviews.length}회`:""}</div>
+    ${l.example?`<div class="small muted">처음 써 보는 분을 위한 연습용 예시입니다. 오늘 화면과 복습 알림에는 나오지 않습니다.</div>`:""}<div class="small muted">${esc(P?P.name:"(궁전 없음)")} · ${active(l).length}개${last?` · 지난 회상 ${Math.round(last.score*100)}%`:""}${l.reviews.length?` · ${l.reviews.length}회`:""}</div>
     <div class="row"><button class="btn sm" data-act="${act}">${label}</button>${l.built?`<button class="btn sm plain" data-act="build">담은 모습 보기</button>`:""}</div>
   </div>`;
 }
@@ -263,13 +266,13 @@ const VIEWS={};
 /* ----- 오늘 ----- */
 VIEWS.today=()=>{
   const t=today();
-  const due=db.lists.filter(l=>l.built&&l.due<=t).sort((a,b)=>a.due-b.due);
-  const unbuilt=db.lists.filter(l=>!l.built);
-  const up=db.lists.filter(l=>l.built&&l.due>t).sort((a,b)=>a.due-b.due).slice(0,4);
+  const due=realLists().filter(l=>l.built&&l.due<=t).sort((a,b)=>a.due-b.due);
+  const unbuilt=realLists().filter(l=>!l.built);
+  const up=realLists().filter(l=>l.built&&l.due>t).sort((a,b)=>a.due-b.due).slice(0,4);
   const s=streak();
   view().innerHTML=`<div class="stack lg">
     <div class="stack" style="gap:4px"><div class="eyebrow">기억을 궁전 곳곳에 담습니다</div>
-      <h1>${due.length?`복습할 목록 ${due.length}개`:unbuilt.length?"궁전에 담을 목록이 있습니다":db.lists.length?"오늘 복습은 끝났습니다":"아직 궁전에 담은 것이 없습니다"}</h1>
+      <h1>${due.length?`복습할 목록 ${due.length}개`:unbuilt.length?"궁전에 담을 목록이 있습니다":realLists().length?"오늘 복습은 끝났습니다":"아직 궁전에 담은 것이 없습니다"}</h1>
       <div class="muted small">${s?`연속 ${s}일째 걷는 중`:"하루 한 번 궁전을 걸으면 오래 남습니다"}</div></div>
     <button class="guidecard" id="goGuide"><span class="gq">?</span><span class="gt"><b>담을자리는 어디에 쓰나요?</b><span>발표, 시험, 숫자, 이름, 책, 장보기까지 쓰임 여섯 가지와 시작하는 법</span></span><span class="ga" aria-hidden="true">→</span></button>
     ${db.palaces.some(p=>p.loci.some(l=>l.photo))?"":`<div class="card due"><h2>먼저 내 궁전을 만드세요</h2><div class="small">예시 궁전은 사진이 없는 연습용입니다. 집이나 가게처럼 매일 걷는 곳을 걷는 순서대로 한 장씩 찍으면, 그 자리들이 기억을 담을 궁전이 됩니다.</div><div class="small"><b>사진을 꼭 찍지 않아도 됩니다.</b> 머릿속으로 떠올릴 수 있는 곳이라면 자리 이름만 적어도 궁전이 됩니다. 사진은 처음 익힐 때 도움이 되는 실마리입니다.</div><div class="row"><button class="btn sm" id="goPal">사진 찍어 궁전 만들기</button><button class="btn sm plain" id="goPal2">사진 없이 만들기</button></div></div>`}
@@ -408,7 +411,7 @@ VIEWS.lists=()=>{
   view().innerHTML=`<div class="stack lg">
     <div class="row between"><h1>목록</h1><button class="btn sm" id="new">새 목록</button></div>
     <p class="small muted" style="margin:0">기억하고 싶은 것들을 순서대로 모아 두는 곳입니다. 발표 요점, 시험 범위, 숫자, 사람 이름처럼 외우고 싶은 것을 목록으로 만들어 궁전 곳곳에 담고, 복습할 날이 되면 궁전을 다시 걸으며 떠올립니다. 목록은 궁전 화면에서 자리마다 바로 담아 만들 수도 있습니다.</p>
-    ${db.lists.length?`<div class="stack">${db.lists.slice().sort((a,b)=>(a.built-b.built)||(a.due-b.due)).map(l=>listCard(l).replace("</div>\n  </div>",`<button class="btn sm plain" data-del="${l.id}">삭제</button><span class="confirm" hidden data-cf="${l.id}">‘${esc(l.title)}’을 지울까요? 복습 기록도 사라집니다.<button class="btn sm danger" data-yes="${l.id}">지우기</button><button class="btn sm plain" data-no="${l.id}">취소</button></span></div>\n  </div>`)).join("")}</div>`
+    ${db.lists.length?`<div class="stack">${db.lists.slice().sort((a,b)=>(!!a.example-!!b.example)||(a.built-b.built)||(a.due-b.due)).map(l=>listCard(l).replace("</div>\n  </div>",`<button class="btn sm plain" data-del="${l.id}">삭제</button><span class="confirm" hidden data-cf="${l.id}">‘${esc(l.title)}’을 지울까요? 복습 기록도 사라집니다.<button class="btn sm danger" data-yes="${l.id}">지우기</button><button class="btn sm plain" data-no="${l.id}">취소</button></span></div>\n  </div>`)).join("")}</div>`
       :`<div class="empty">아직 목록이 없습니다. 장보기 목록, 발표 요점, 시험 범위처럼 순서대로 외울 것을 넣어 보세요.</div>`}
   </div>`;
   bindCards();on("#new","click",()=>go("newList"));
@@ -735,7 +738,7 @@ document.addEventListener("keydown",e=>{if(!V||V.name!=="flash"||/INPUT|TEXTAREA
   else if(e.key==="1"&&$("#fOk"))$("#fOk").click();else if(e.key==="2"&&$("#fNo"))$("#fNo").click()});
 
 view().innerHTML=`<div class="empty">불러오는 중…</div>`;
-load().then(d=>{db=d;if(!db.settings.exRemoved){db.lists=db.lists.filter(l=>l.title!=="조선 전기 왕 순서 (예시)");db.settings.exRemoved=true;save()}if(!db.settings.seenGuide)V={name:"guide"};render();try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})}catch(e){}});
+load().then(d=>{db=d;if(!db.settings.exV2){db.lists=db.lists.filter(l=>l.title!=="조선 전기 왕 순서 (예시)"||l.example);if(!db.lists.some(l=>l.example)){const ex=exampleList();if(ex)db.lists.push(ex)}db.settings.exV2=true;save()}if(!db.settings.seenGuide)V={name:"guide"};render();try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})}catch(e){}});
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!/claude\.ai|claudeusercontent/.test(location.hostname)){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 </script>
 

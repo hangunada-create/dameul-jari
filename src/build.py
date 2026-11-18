@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(ROOT, "dist")
-VERSION = "2.4.1"
+VERSION = "2.4.2"
 shutil.rmtree(DIST, ignore_errors=True)
 os.makedirs(os.path.join(DIST, "icons"))
 
@@ -112,7 +112,7 @@ async function checkDue(){
   const now=new Date();const t0=new Date(now);t0.setHours(0,0,0,0);const today=t0.getTime();
   let total=0;
   for(const p of db.palaces){
-    const due=db.lists.filter(l=>l.palaceId===p.id&&l.built&&l.due<=today);total+=due.length;
+    const due=db.lists.filter(l=>!l.example&&l.palaceId===p.id&&l.built&&l.due<=today);total+=due.length;
     const nt=p.notify;if(!nt||!nt.on||!due.length)continue;
     if(now.getHours()<(nt.hour==null?20:nt.hour))continue;
     const key="lastNotified:"+p.id;if((await kvGet(d,key))===today)continue;

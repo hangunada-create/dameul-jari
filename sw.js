@@ -1,5 +1,5 @@
-// 담을자리 오프라인 캐시와 복습 알림 v2.4.1
-const CACHE="dameul-2.4.1";
+// 담을자리 오프라인 캐시와 복습 알림 v2.4.2
+const CACHE="dameul-2.4.2";
 const SHELL=["./","index.html","manifest.webmanifest","icons/icon-192.png","icons/icon-512.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
@@ -20,7 +20,7 @@ async function checkDue(){
   const now=new Date();const t0=new Date(now);t0.setHours(0,0,0,0);const today=t0.getTime();
   let total=0;
   for(const p of db.palaces){
-    const due=db.lists.filter(l=>l.palaceId===p.id&&l.built&&l.due<=today);total+=due.length;
+    const due=db.lists.filter(l=>!l.example&&l.palaceId===p.id&&l.built&&l.due<=today);total+=due.length;
     const nt=p.notify;if(!nt||!nt.on||!due.length)continue;
     if(now.getHours()<(nt.hour==null?20:nt.hour))continue;
     const key="lastNotified:"+p.id;if((await kvGet(d,key))===today)continue;
