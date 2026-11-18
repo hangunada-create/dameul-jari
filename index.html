@@ -141,8 +141,6 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .guidecard .gt b{font-family:var(--display);font-size:1.08rem}
 .guidecard .gt span{font-size:.85rem;color:var(--muted)}
 .guidecard .ga{color:var(--accent);font-size:1.2rem;font-weight:700}
-.qcard{background:var(--accent-soft);border-radius:8px;padding:12px 14px;font-family:var(--display);font-size:1.05rem;line-height:1.55}
-.qwrap{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .locus.walk{aspect-ratio:4/3;min-height:200px;max-height:48vh;touch-action:pan-y}
 .locus.walk.nophoto{align-items:center;justify-content:center;background:var(--surface)}
 .locus.walk.nophoto .cap{justify-content:center;flex-direction:column;align-items:center;gap:4px}
@@ -481,11 +479,10 @@ VIEWS.build=()=>{
     <div class="item">${esc(it.text)}</div>
     ${isNumTemp()?`<div class="row" style="justify-content:center;gap:10px">${db.settings.numHint===false?"":`<span class="small muted">${chunks(it.text).map(c=>`${c} ${db.numImg[c]?esc(db.numImg[c]):"(짝표 없음)"}`).join(" · ")}</span>`}<button class="putl" id="nh">짝표 ${db.settings.numHint===false?"보기":"숨기기"}</button></div>`:""}
     <label class="f">이 자리에 어떻게 담을까요<textarea id="scene" rows="3" placeholder="크게, 움직이게, 소리나 냄새까지. 예: ${esc(loc.name)}에서 ${esc(it.text)}이(가) 튀어나와 …">${esc(it.scene)}</textarea></label>
-    ${qcardHTML()}
     <div class="row"><button class="btn plain" id="prev" ${pos?"":"disabled"}>이전</button>${pos<n-1?`<button class="btn" id="next">다음 장소</button>`:`<button class="btn" id="done">다 담았어요 · 떠올리기</button>`}</div>
     ${pos===0&&!L.built?`<div class="tip"><b>직접 담는 게 핵심입니다.</b> 사진 속 자리의 생김새와 외울 것이 엉뚱하게 부딪치는 모습을 떠올리세요. 글로 적으면 한 번 더 상상하게 되어 오래 남습니다. 비워 두고 넘어가도 됩니다.</div>`:""}
   </div>`;
-  on("#scene","input",(e,t)=>{it.scene=t.value;if(!V.temp)save()});bindQ(()=>loc.name,()=>it.text);
+  on("#scene","input",(e,t)=>{it.scene=t.value;if(!V.temp)save()});
   on("#prev","click",()=>{V.i=pos-1;render()});on("#next","click",()=>{V.i=pos+1;render()});
   on("#done","click",()=>{if(!V.temp){L.built=true;save()}startRecall(L,V.temp)});
   on("#nh","click",()=>{db.settings.numHint=db.settings.numHint===false;save();render()});
@@ -626,7 +623,6 @@ VIEWS.place=()=>{
     ${V.lid==="new"?`<label class="f">새 목록 이름<input type="text" id="plTitle" value="${esc(V.newTitle||"")}" placeholder="예: 파이 100자리"></label>`:""}
     <label class="f">외울 것<input type="text" id="plText" value="${esc(it.text)}" placeholder="이 자리에 담을 것" autocomplete="off"></label>
     <label class="f">어떻게 담을까요<textarea id="plScene" rows="3" placeholder="크게, 움직이게, 소리나 냄새까지. 예: ${esc(loc.name||"이 자리")}에서 …">${esc(it.scene)}</textarea></label>
-    ${qcardHTML()}
     ${others.length?`<div class="small muted">이 자리에 다른 목록으로 담긴 것: ${others.join(", ")}</div>`:""}
     <div class="row"><button class="btn plain" id="plPrev" ${i?"":"disabled"}>이전 자리</button><button class="btn" id="plNext" ${i<n-1?"":"disabled"}>다음 자리</button></div>
     <div class="row between"><button class="btn ghost" id="plDone">다 담았어요 · 떠올리기</button><button class="btn sm plain" id="plBack">궁전으로</button></div>
@@ -636,7 +632,7 @@ VIEWS.place=()=>{
   on("#plList","change",(e,t)=>{V.lid=t.value;render()});
   on("#plTitle","input",(e,t)=>{if(V.lid==="new")V.newTitle=t.value;else{const T=lst(V.lid);if(T&&t.value.trim())T.title=t.value.trim();save()}});
   on("#plText","input",(e,t)=>{slot().text=t.value;save()});
-  on("#plScene","input",(e,t)=>{slot().scene=t.value;save()});bindQ(()=>loc.name,()=>$("#plText").value);
+  on("#plScene","input",(e,t)=>{slot().scene=t.value;save()});
   on("#plText","keydown",(e)=>{if(e.key==="Enter"){e.preventDefault();$("#plScene").focus()}});
   on("#plPrev","click",()=>{V.i=i-1;render()});on("#plNext","click",()=>{V.i=i+1;render()});
   on("#plBack","click",()=>go("palace",{pid:P.id}));
@@ -765,29 +761,6 @@ function flashDone(){
 document.addEventListener("keydown",e=>{if(!V||V.name!=="flash"||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   if((e.key===" "||e.key==="Enter")&&$("#fShow")){e.preventDefault();$("#fShow").click()}
   else if(e.key==="1"&&$("#fOk"))$("#fOk").click();else if(e.key==="2"&&$("#fNo"))$("#fNo").click()});
-
-/* ----- 질문 카드: 답 대신 질문 ----- */
-const jong=w=>{const t=String(w).trim();const c=t.slice(-1).charCodeAt(0);return c>=0xAC00&&c<=0xD7A3?(c-0xAC00)%28>0:/[013678]$/.test(t)};
-const J=(w,a,b)=>w+(jong(w)?a:b);
-const QTPL=[
-  (p,x)=>`${J(x,"이","가")} 집채만큼 커져서 ${J(p,"을","를")} 덮친다면?`,
-  (p,x)=>`${p}에서 ${J(x,"이","가")} 움직인다면, 어떻게 움직일까요?`,
-  (p,x)=>`${J(x,"이","가")} ${p}에 부딪칠 때 어떤 소리가 날까요?`,
-  (p,x)=>`${p}에서 ${x} 냄새가 난다면 어떤 냄새일까요?`,
-  (p,x)=>`${J(x,"을","를")} 손으로 만지면 어떤 느낌일까요? 뜨거운가요, 끈적한가요?`,
-  (p,x)=>`${p}의 어느 부분이 ${J(x,"과","와")} 닮았나요?`,
-  (p,x)=>`${J(x,"이","가")} ${p}에서 절대 하면 안 되는 일을 한다면?`,
-  (p,x)=>`아는 사람 중 누가 ${p}에서 ${J(x,"을","를")} 들고 있을까요? 무슨 표정인가요?`,
-  (p,x)=>`${J(x,"이","가")} 수백 개로 늘어나 ${J(p,"을","를")} 가득 채운다면?`,
-  (p,x)=>`${J(x,"이","가")} 말을 한다면 ${p}에서 뭐라고 외칠까요?`,
-  (p,x)=>`${J(p,"이","가")} ${J(x,"을","를")} 한입에 삼켜 버린다면?`,
-  (p,x)=>`색을 바꿔 보세요. ${J(x,"이","가")} 형광 분홍색으로 번쩍인다면?`,
-  (p,x)=>`${J(x,"이","가")} ${p}에서 불타거나, 녹거나, 얼어붙는다면?`,
-  (p,x)=>`${p}에 들어서는 순간 가장 먼저 눈에 들어오는 곳은 어디인가요? 거기에 ${J(x,"이","가")} 어떻게 걸려 있나요?`
-];
-function qItemWord(t){const s=String(t||"").trim();if(/^\d+$/.test(s)&&db.numImg){const w=chunks(s).map(c=>db.numImg[c]).filter(Boolean);if(w.length)return w.join("·")}return s.length>18?s.slice(0,18)+"…":s}
-const qcardHTML=()=>`<div class="qwrap"><div class="qcard" id="qc" hidden></div><button type="button" class="putl" id="qBtn" style="padding-left:0">막히면 질문 카드 뽑기</button></div>`;
-function bindQ(getPlace,getItem){let last=-1;on("#qBtn","click",(e,b)=>{let k;do{k=Math.floor(Math.random()*QTPL.length)}while(k===last);last=k;const c=$("#qc");c.textContent=QTPL[k]((getPlace()||"이 자리").trim(),qItemWord(getItem())||"이것");c.hidden=false;b.textContent="다른 질문 뽑기"})}
 
 /* ----- 걷기 모드: 한 화면에 한 자리 ----- */
 function walkView(L,P,pOK){
