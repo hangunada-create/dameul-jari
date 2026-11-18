@@ -1,5 +1,5 @@
-// 담을자리 오프라인 캐시와 복습 알림 v2.3.0
-const CACHE="dameul-2.3.0";
+// 담을자리 오프라인 캐시와 복습 알림 v2.3.1
+const CACHE="dameul-2.3.1";
 const SHELL=["./","index.html","manifest.webmanifest","icons/icon-192.png","icons/icon-512.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});

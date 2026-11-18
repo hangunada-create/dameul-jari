@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(ROOT, "dist")
-VERSION = "2.3.0"
+VERSION = "2.3.1"
 shutil.rmtree(DIST, ignore_errors=True)
 os.makedirs(os.path.join(DIST, "icons"))
 
