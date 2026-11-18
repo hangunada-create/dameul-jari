@@ -735,7 +735,7 @@ document.addEventListener("keydown",e=>{if(!V||V.name!=="flash"||/INPUT|TEXTAREA
   else if(e.key==="1"&&$("#fOk"))$("#fOk").click();else if(e.key==="2"&&$("#fNo"))$("#fNo").click()});
 
 view().innerHTML=`<div class="empty">불러오는 중…</div>`;
-load().then(d=>{db=d;if(!db.settings.seenGuide)V={name:"guide"};render();try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})}catch(e){}});
+load().then(d=>{db=d;if(!db.settings.exRemoved){db.lists=db.lists.filter(l=>l.title!=="조선 전기 왕 순서 (예시)");db.settings.exRemoved=true;save()}if(!db.settings.seenGuide)V={name:"guide"};render();try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})}catch(e){}});
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!/claude\.ai|claudeusercontent/.test(location.hostname)){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 </script>
 
